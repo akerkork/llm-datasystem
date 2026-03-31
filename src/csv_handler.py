@@ -24,11 +24,11 @@ class CSVIngestor:
         """
         The main entry point for the CLI to trigger an ingestion.
         
-        1. Validates file existence and loads data.
-        2. Validates data integrity.
-        3. Coordinates with Schema Manager to check table existence and get DDL.
-        4. Executes table creation (if new).
-        5. Manually inserts records into the database.
+        - Validates file existence and loads data.
+        - Validates data integrity.
+        - Coordinates with Schema Manager to check table existence and get DDL.
+        - Executes table creation (if new).
+        - Manually inserts records into the database.
         """
         try:
             # 1. Load Data
