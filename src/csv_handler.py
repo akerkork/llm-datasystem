@@ -66,16 +66,21 @@ class CSVIngestor:
         return pd.read_csv(path)
 
     def _validate_dataframe(self, df: pd.DataFrame) -> bool:
-        """
-        Business logic validation. 
-        Ensures columns are named correctly and data is not corrupt.
-        """
-        if df.empty:
-            raise ValueError("The provided CSV file is empty.")
+            """
+            Logic validation and data normalization. 
+            Ensures columns are named consistently and data is prepared for manual SQL insertion.
+            """
+            if df.empty:
+                raise ValueError("The provided CSV file is empty.")
 
-        # Additional business logic validation here
-            
-        return True
+            # Normalize column names to improve schema matching reliability
+            df.columns = [str(col).strip().lower().replace(' ', '_').replace('-', '_') for col in df.columns]
+
+            # Translate missing values to SQL NULL values.
+            df.fillna(value=pd.NA, inplace=True)
+            df.replace({pd.NA: None}, inplace=True)
+                
+            return True
 
     def _execute_sql(self, query: str) -> None:
         """Executes a DDL or DML statement directly."""
