@@ -5,17 +5,14 @@ from pathlib import Path
 
 class CSVIngestor:
     """
-    Handles the loading, validation, and preparation of CSV data.
-    Coordinates with the Schema Manager to ensure compatibility, 
-    and manually executes the SQL to insert the data into SQLite.
+    Handles the loading, validation, and preparation of CSV data
     """
 
     def __init__(self, db_conn: sqlite3.Connection, schema_manager):
         """
         Args:
             db_conn: A connection to the SQLite database to execute queries.
-            schema_manager: An instance of the SchemaManager module 
-                            to handle schema discovery and generation.
+            schema_manager: An instance of the SchemaManager module
         """
         self.db_conn = db_conn
         self.schema_manager = schema_manager
@@ -23,7 +20,6 @@ class CSVIngestor:
     def process_file(self, file_path: str, table_name: str) -> Dict[str, Any]:
         """
         The main entry point for the CLI to trigger an ingestion.
-        
         - Validates file existence and loads data.
         - Validates data integrity.
         - Coordinates with Schema Manager to check table existence and get DDL.
@@ -31,15 +27,12 @@ class CSVIngestor:
         - Manually inserts records into the database.
         """
         try:
-            # 1. Load Data
             df = self._load_csv(file_path)
             
-            # 2. Validate Data (Check for nulls, types, etc.)
+            # Validate Data
             self._validate_dataframe(df)
             
-            # 3. Hand off to Schema Manager for schema checking
-            # The schema manager determines if we append or create, 
-            # but it does NOT execute the SQL itself.
+            # Hand off to Schema Manager for schema checking
             schema_action = self.schema_manager.check_schema_compatibility(table_name, df)
             
             if schema_action.get("action") == "create":
@@ -47,10 +40,10 @@ class CSVIngestor:
                 create_stmt = schema_action.get("create_statement")
                 self._execute_sql(create_stmt)
             elif schema_action.get("action") == "conflict":
-                # Handle conflict (overwrite, rename, skip) based on your logic
+                # Handle conflict 
                 return {"status": "error", "message": "Schema conflict detected."}
             
-            # 4. Insert Data (Must be done manually, no df.to_sql())
+            # Insert data
             self._insert_data(table_name, df)
             
             return {"status": "success", "rows_ingested": len(df)}
@@ -59,7 +52,7 @@ class CSVIngestor:
             return {"status": "error", "message": str(e)}
 
     def _load_csv(self, file_path: str) -> pd.DataFrame:
-        """Loads CSV into a Pandas DataFrame."""
+        """Loads CSV into a Pandas DataFrame"""
         path = Path(file_path)
         if not path.exists():
             raise FileNotFoundError(f"CSV file not found at: {file_path}")
@@ -83,15 +76,14 @@ class CSVIngestor:
             return True
 
     def _execute_sql(self, query: str) -> None:
-        """Executes a DDL or DML statement directly."""
+        """Executes a DDL or DML statement directly"""
         cursor = self.db_conn.cursor()
         cursor.execute(query)
         self.db_conn.commit()
 
     def _insert_data(self, table_name: str, df: pd.DataFrame) -> None:
         """
-        Manually inserts data row by row. 
-        Must NOT use df.to_sql() per project restrictions.
+        Manually inserts data row by row
         """
         cursor = self.db_conn.cursor()
         
