@@ -1,5 +1,5 @@
 import sqlite3
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 
 class QueryService:
     """
@@ -24,7 +24,24 @@ class QueryService:
         Handles direct SQL input from the user.
         Validates the SQL code against the database schema before executing it.
         """
-        pass
+        try:
+            # Validate the user's direct SQL input to protect the database
+            self.sql_validator.validate_query(sql_query)
+            
+            # If validation passes, safely execute the query
+            results, columns = self._execute_query(sql_query)
+            
+            return {
+                "status": "success", 
+                "columns": columns, 
+                "results": results, 
+                "query": sql_query
+            }
+        except ValueError as ve:
+            # Validation errors
+            return {"status": "error", "message": f"Validation Error: {str(ve)}"}
+        except Exception as e:
+            return {"status": "error", "message": f"Execution Error: {str(e)}"}
 
     def process_natural_language_query(self, user_query: str) -> Dict[str, Any]:
         """
@@ -36,7 +53,41 @@ class QueryService:
         4. Executes the SQL if valid.
         5. Formats and returns the response.
         """
-        pass
+        try:
+            # Get the database schema context
+            schema_context = self.schema_manager.get_database_schema_context()
+            
+            # Pass to the LLM Adapter
+            llm_response = self.llm_adapter.generate_sql(user_query, schema_context)
+            generated_sql = llm_response.get("sql")
+            explanation = llm_response.get("explanation", "No explanation provided.")
+            
+            if not generated_sql:
+                return {"status": "error", "message": "The LLM failed to generate a SQL query."}
+            
+            # Validate the generated SQL
+            self.sql_validator.validate_query(generated_sql)
+            
+            # Execute the SQL safely
+            results, columns = self._execute_query(generated_sql)
+            
+            # Format the response
+            return {
+                "status": "success", 
+                "columns": columns,
+                "results": results, 
+                "query": generated_sql,
+                "explanation": explanation
+            }
+        except ValueError as ve:
+            return {
+                "status": "error", 
+                "message": f"Validator rejected LLM output: {str(ve)}",
+                "query": generated_sql if 'generated_sql' in locals() else None
+            }
+        except Exception as e:
+            return {"status": "error", "message": f"An error occurred: {str(e)}"}
+
 
     def _execute_query(self, valid_sql: str) -> List[tuple]:
         """
