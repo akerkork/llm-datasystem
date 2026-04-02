@@ -37,7 +37,14 @@ class SchemaManager:
         Returns:
             A list of table names currently in the SQLite database.
         """
-        pass
+        cursor = self.db_conn.cursor()
+        # Query the sqlite_master table to find all user-created tables
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        
+        # Filter out internal SQLite tables like 'sqlite_sequence'
+        return [table[0] for table in tables if table[0] != 'sqlite_sequence']
+
 
     def get_table_schema(self, table_name: str) -> Dict[str, str]:
         """
