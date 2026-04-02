@@ -1,7 +1,7 @@
 import sqlite3
 import pandas as pd
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 
 class SchemaManager:
     """
@@ -45,7 +45,6 @@ class SchemaManager:
         # Filter out internal SQLite tables like 'sqlite_sequence'
         return [table[0] for table in tables if table[0] != 'sqlite_sequence']
 
-
     def get_table_schema(self, table_name: str) -> Dict[str, str]:
         """
         Uses PRAGMA table_info() to detect an existing table's schema.
@@ -56,7 +55,17 @@ class SchemaManager:
         Returns:
             A dictionary mapping column names to their SQL data types.
         """
-        pass
+        cursor = self.db_conn.cursor()
+        cursor.execute(f"PRAGMA table_info({table_name});")
+        columns = cursor.fetchall()
+        
+        # PRAGMA table_info returns tuples in the format: (cid, name, type, notnull, dflt_value, pk)
+        # We extract the name (index 1) and type (index 2)
+        schema = {}
+        for col in columns:
+            schema[col[1]] = col[2]
+            
+        return schema
 
     def infer_schema_from_df(self, df: pd.DataFrame) -> Dict[str, str]:
         """
@@ -69,7 +78,17 @@ class SchemaManager:
         Returns:
             A dictionary mapping DataFrame column names to SQL data types.
         """
-        pass
+        schema = {}
+        for col_name, dtype in df.dtypes.items():
+            if pd.api.types.is_integer_dtype(dtype):
+                schema[col_name] = "INTEGER"
+            elif pd.api.types.is_float_dtype(dtype):
+                schema[col_name] = "REAL"
+            else:
+                # Default to TEXT for strings, dates, and other objects
+                schema[col_name] = "TEXT"
+                
+        return schema
 
     def generate_create_table_ddl(self, table_name: str, schema: Dict[str, str]) -> str:
         """
@@ -83,7 +102,14 @@ class SchemaManager:
         Returns:
             The raw SQL DDL string for creating the table.
         """
-        pass
+        # Initialize with the required primary key
+        columns_ddl = ["id INTEGER PRIMARY KEY AUTOINCREMENT"]
+        
+        for col_name, col_type in schema.items():
+            columns_ddl.append(f"{col_name} {col_type}")
+            
+        columns_str = ", ".join(columns_ddl)
+        return f"CREATE TABLE {table_name} ({columns_str});"
 
     def check_schema_compatibility(self, table_name: str, df: pd.DataFrame) -> Dict[str, Any]:
         """
@@ -99,7 +125,26 @@ class SchemaManager:
         - "conflict": If the table exists but schemas do not match, requiring user 
                       prompting (overwrite, rename, or skip).
         """
-        pass
+        existing_tables = self.get_existing_tables()
+        
+        if table_name not in existing_tables:
+            return {"action": "create"}
+            
+        db_schema = self.get_table_schema(table_name)
+        df_schema = self.infer_schema_from_df(df)
+        
+        # Strip out the auto-generated 'id' column from the DB schema so we can fairly compare it to the incoming CSV data
+        db_schema_no_id = {k: v for k, v in db_schema.items() if k.lower() != 'id'}
+        
+        # Compare schemas exactly
+        if db_schema_no_id == df_schema:
+            return {"action": "append"}
+        else:
+            self.log_error(
+                f"Schema conflict detected for '{table_name}'. "
+                f"DB expects: {db_schema_no_id}, CSV provided: {df_schema}"
+            )
+            return {"action": "conflict"}
 
     def get_database_schema_context(self) -> str:
         """
@@ -110,7 +155,18 @@ class SchemaManager:
             A formatted string describing all tables, their columns, and data types 
             to be injected into the LLM prompt.
         """
-        pass
+        tables = self.get_existing_tables()
+        if not tables:
+            return "The database is currently empty."
+            
+        context_parts = []
+        for table in tables:
+            schema = self.get_table_schema(table)
+            # table_name (col1 type, col2 type)
+            cols_str = ", ".join([f"{name} {dtype}" for name, dtype in schema.items()])
+            context_parts.append(f"- {table} ({cols_str})")
+            
+        return "The database uses SQLite and contains the following tables:\n" + "\n".join(context_parts)
         
     def log_error(self, message: str) -> None:
         """
