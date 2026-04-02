@@ -95,7 +95,7 @@ class SQLValidator:
                 # Take the first word to drop implicit aliases without AS
                 core_col = part.split()[0]
                 
-                # Remove table prefixes (e.g., table_name.column_name -> column_name)
+                # Remove table prefixes
                 col_name = core_col.split('.')[-1]
                 
                 # Extract the column name from inside basic SQL functions like SUM() or COUNT()
@@ -119,7 +119,7 @@ class SQLValidator:
         
         valid_columns_in_query = set()
         
-        # 1. Validate Tables
+        # Validate Tables
         for t in tables:
             if t not in existing_tables:
                 raise ValueError(f"Unknown table referenced: '{t}'")
@@ -129,9 +129,9 @@ class SQLValidator:
             schema = self.schema_manager.get_table_schema(actual_table_name)
             valid_columns_in_query.update([c.lower() for c in schema.keys()])
             
-        # 2. Validate Columns
+        # Validate Columns
         for c in columns:
-            # We ignore SQL constants like 'COUNT' which might get caught in simple extraction
+            # We ignore SQL constants like COUNT which might get caught in simple extraction
             if c not in valid_columns_in_query and c.upper() not in ["COUNT", "SUM", "AVG", "MIN", "MAX"]:
                 raise ValueError(f"Unknown column referenced: '{c}'")
                 

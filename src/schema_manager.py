@@ -42,7 +42,7 @@ class SchemaManager:
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = cursor.fetchall()
         
-        # Filter out internal SQLite tables like 'sqlite_sequence'
+        # Filter out internal SQLite tables
         return [table[0] for table in tables if table[0] != 'sqlite_sequence']
 
     def get_table_schema(self, table_name: str) -> Dict[str, str]:
@@ -59,7 +59,6 @@ class SchemaManager:
         cursor.execute(f"PRAGMA table_info({table_name});")
         columns = cursor.fetchall()
         
-        # PRAGMA table_info returns tuples in the format: (cid, name, type, notnull, dflt_value, pk)
         # We extract the name (index 1) and type (index 2)
         schema = {}
         for col in columns:
@@ -133,7 +132,7 @@ class SchemaManager:
         db_schema = self.get_table_schema(table_name)
         df_schema = self.infer_schema_from_df(df)
         
-        # Strip out the auto-generated 'id' column from the DB schema so we can fairly compare it to the incoming CSV data
+        # Strip out the auto-generated id column from the DB schema so we can fairly compare it to the incoming CSV data
         db_schema_no_id = {k: v for k, v in db_schema.items() if k.lower() != 'id'}
         
         # Compare schemas exactly
