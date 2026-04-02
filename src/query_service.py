@@ -94,11 +94,21 @@ class QueryService:
         Safely executes a validated SELECT query against the SQLite database 
         and fetches the results.
         """
-        pass
+        cursor = self.db_conn.cursor()
+        cursor.execute(valid_sql)
+        results = cursor.fetchall()
+        
+        # Extract column names from the cursor description to make formatting easier in the CLI
+        columns = [description[0] for description in cursor.description] if cursor.description else []
+        
+        return results, columns
 
     def get_table_listing(self) -> List[str]:
         """
         Retrieves a list of available tables using sqlite_master to provide 
         listing functionality to the user.
         """
-        pass
+        cursor = self.db_conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name != 'sqlite_sequence';")
+        tables = cursor.fetchall()
+        return [table[0] for table in tables]
