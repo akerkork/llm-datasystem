@@ -1,6 +1,6 @@
 import pandas as pd
 import sqlite3
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from pathlib import Path
 
 class CSVIngestor:
@@ -28,7 +28,7 @@ class CSVIngestor:
             The main entry point for the CLI to trigger an ingestion.
             - Validates file existence and loads data.
             - Validates data integrity.
-            - Coordinates with Schema Manager to check table existence and get DDL.
+            - Coordinates with Schema Manager to check table existence.
             - Executes table creation (if new).
             - Manually inserts records into the database.
             """
@@ -38,7 +38,7 @@ class CSVIngestor:
                 # Validate Data
                 self._validate_dataframe(df)
                 
-                # Hand off to Schema Manager for schema checking
+                # Go to Schema Manager for schema checking
                 schema_action = self.schema_manager.check_schema_compatibility(table_name, df)
                 
                 # Apply user's conflict resolution choice if a conflict was previously detected
@@ -98,10 +98,17 @@ class CSVIngestor:
             return True
 
     def _execute_sql(self, query: str) -> None:
-        """Executes a DDL or DML statement directly"""
-        cursor = self.db_conn.cursor()
-        cursor.execute(query)
-        self.db_conn.commit()
+            """
+            Executes a DDL statement directly.
+            """
+            # Create a cursor object to act as the intermediary for sending commands to the database
+            cursor = self.db_conn.cursor()
+            
+            # Send the raw SQL string to the SQLite engine for processing
+            cursor.execute(query)
+            
+            # Commit the transaction to ensure all changes are permanently saved to the .sqlite file
+            self.db_conn.commit()
 
     def _insert_data(self, table_name: str, df: pd.DataFrame) -> None:
         """
