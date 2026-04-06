@@ -1,4 +1,6 @@
+import re
 from typing import Dict
+import google.generativeai as genai
 
 class LLMAdapter:
     """
@@ -6,7 +8,7 @@ class LLMAdapter:
     Treats all LLM output as untrusted input and never executes SQL directly.
     """
 
-    def __init__(self, api_key: str, model_name: str = "gpt-3.5-turbo"):
+    def __init__(self, api_key: str, model_name: str = "gemini-1.5-flash"):
         """
         Initializes the LLM Adapter with the necessary credentials and model configuration.
         """
