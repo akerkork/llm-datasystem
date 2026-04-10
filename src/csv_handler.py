@@ -56,10 +56,6 @@ class CSVIngestor:
                 elif schema_action.get("action") == "conflict" and not conflict_resolution:
                     return {"status": "conflict", "message": "Schema conflict detected."}
                 
-                # Catch the append action and prompt the user
-                elif schema_action.get("action") == "append" and not conflict_resolution:
-                    return {"status": "append", "message": f"Table '{table_name}' already exists with a matching schema."}
-                
                 # Insert data
                 self._insert_data(table_name, df)
                 
