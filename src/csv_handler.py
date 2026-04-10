@@ -59,7 +59,13 @@ class CSVIngestor:
 
                 # Execute table creation if required by the schema action
                 if schema_action.get("action") == "create":
-                    self._execute_sql(schema_action.get("create_statement"))
+                    create_stmt = schema_action.get("create_statement")
+                    # FIX: If the schema manager didn't provide the create statement (initial run), generate it.
+                    if not create_stmt:
+                        schema = self.schema_manager.infer_schema_from_df(df)
+                        create_stmt = self.schema_manager.generate_create_table_ddl(table_name, schema)
+                    
+                    self._execute_sql(create_stmt)
                     
                 elif schema_action.get("action") == "conflict" and not conflict_resolution:
                     # Pause ingestion and return a conflict status to the CLI so it can prompt the user
