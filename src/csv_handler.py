@@ -33,7 +33,7 @@ class CSVIngestor:
                 
                 # Apply user's conflict resolution choice
                 if conflict_resolution in ["skip", "cancel"]:
-                    return {"status": "success", "message": "Ingestion cancelled by user."}
+                    return {"status": "success", "message": "Ingestion skipped by user."}
                 
                 elif conflict_resolution == "rename" and new_table_name:
                     table_name = new_table_name
