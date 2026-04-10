@@ -56,7 +56,7 @@ class CSVIngestor:
                 elif schema_action.get("action") == "conflict" and not conflict_resolution:
                     return {"status": "conflict", "message": "Schema conflict detected."}
                 
-                # Insert data
+                # Insert data.
                 self._insert_data(table_name, df)
                 
                 return {"status": "success", "rows_ingested": len(df)}
