@@ -6,7 +6,7 @@ class CLI:
     The Command Line Interface for the Data System.
     Acts as the entry point for user interaction, managing flows 
     through the Query Service and Data Loader layers without directly accessing 
-    the database.
+    the database..
     """
 
     def __init__(self, query_service: Any, csv_ingestor: Any):
