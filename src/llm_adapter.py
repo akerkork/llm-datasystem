@@ -1,6 +1,6 @@
 import re
 from typing import Dict
-import google.generativeai as genai
+from google import genai
 
 class LLMAdapter:
     """
@@ -14,9 +14,7 @@ class LLMAdapter:
         """
         self.api_key = api_key
         self.model_name = model_name
-
-        genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel(self.model_name)
+        self.client = genai.Client(api_key=self.api_key)
 
     def generate_sql(self, user_query: str, db_schema_context: str) -> Dict[str, str]:
         """
@@ -28,7 +26,9 @@ class LLMAdapter:
         prompt = self._build_prompt(user_query, db_schema_context)
 
         try:
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt)
             response_text = getattr(response, "text", "") or ""
             return self._parse_llm_response(response_text)
         except Exception as e:

@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import sys
 
 from src.csv_handler import CSVIngestor
 from src.schema_manager import SchemaManager
@@ -13,6 +14,13 @@ def main():
     The main entry point for the Data System application.
     Wires up all the dependencies and starts the CLI.
     """
+    # Securely load the API key from the environment
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        print("Error: GEMINI_API_KEY environment variable not set.")
+        print("Please set it before running the application.")
+        sys.exit(1)
+
     # Establish the database connection
     db_path = "data/database.sqlite"
     
@@ -24,8 +32,8 @@ def main():
     schema_manager = SchemaManager(db_conn)
     sql_validator = SQLValidator(schema_manager)
     
-    # Instantiate the LLM Adapter (ADD API KEY HERE)
-    llm_adapter = LLMAdapter(api_key="API_KEY")
+    # Instantiate the LLM Adapter with the secure key
+    llm_adapter = LLMAdapter(api_key=api_key, model_name="gemini-1.5-flash")
     
     # Data and orchestration modules
     csv_ingestor = CSVIngestor(db_conn, schema_manager)
