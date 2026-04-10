@@ -6,13 +6,11 @@ from unittest.mock import MagicMock, patch
 
 def _load_llm_adapter_class():
     fake_genai = types.SimpleNamespace()
-    fake_genai.configure = MagicMock()
-    fake_genai.GenerativeModel = MagicMock()
+    fake_genai.Client = MagicMock()
 
     google_module = sys.modules.setdefault("google", types.ModuleType("google"))
-    sys.modules["google.generativeai"] = fake_genai
-    setattr(google_module, "generativeai", fake_genai)
-
+    sys.modules["google.genai"] = fake_genai
+    setattr(google_module, "genai", fake_genai)
     try:
         module = importlib.import_module("src.llm_adapter")
     except ModuleNotFoundError:
@@ -21,10 +19,18 @@ def _load_llm_adapter_class():
 
 LLMAdapter = _load_llm_adapter_class()
 
+def _module_name():
+    return LLMAdapter.__module__
+
 def make_adapter():
-    with patch("llm_adapter.genai.configure"), patch("llm_adapter.genai.GenerativeModel") as mock_model:
+    with patch(f"{_module_name()}.genai.Client") as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = SimpleNamespace(text="")
+        mock_client_cls.return_value = mock_client
+
         adapter = LLMAdapter("fake-key", "gemini-test")
-        return adapter, mock_model
+        return adapter, mock_client
+
 
 def test_build_prompt_contains_schema_and_user_query():
     adapter, _ = make_adapter()
@@ -32,6 +38,7 @@ def test_build_prompt_contains_schema_and_user_query():
     assert "show all users" in prompt
     assert "users" in prompt
     assert "Only generate a read-only SELECT query" in prompt
+
 
 def test_parse_llm_response_with_fenced_sql():
     adapter, _ = make_adapter()
@@ -50,24 +57,30 @@ def test_parse_llm_response_with_labeled_sections():
     assert parsed["explanation"] == "Returns all ages."
 
 def test_generate_sql_successfully_calls_model_and_parses_response():
-    with patch("llm_adapter.genai.configure"), patch("llm_adapter.genai.GenerativeModel") as mock_model_cls:
-        mock_model = MagicMock()
-        mock_model.generate_content.return_value = SimpleNamespace(
+    with patch(f"{_module_name()}.genai.Client") as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = SimpleNamespace(
             text="SQL:\nSELECT name FROM people;\n\nExplanation:\nLists names."
         )
-        mock_model_cls.return_value = mock_model
+        mock_client_cls.return_value = mock_client
 
         adapter = LLMAdapter("fake-key", "gemini-test")
         result = adapter.generate_sql("show names", "- people (name TEXT)")
 
-        assert result == {"sql": "SELECT name FROM people;", "explanation": "Lists names."}
-        mock_model.generate_content.assert_called_once()
+        assert result == {
+            "sql": "SELECT name FROM people;",
+            "explanation": "Lists names.",
+        }
+        mock_client.models.generate_content.assert_called_once_with(
+            model="gemini-test",
+            contents=adapter._build_prompt("show names", "- people (name TEXT)"),
+        )
 
 def test_generate_sql_returns_error_payload_when_model_call_fails():
-    with patch("llm_adapter.genai.configure"), patch("llm_adapter.genai.GenerativeModel") as mock_model_cls:
-        mock_model = MagicMock()
-        mock_model.generate_content.side_effect = RuntimeError("boom")
-        mock_model_cls.return_value = mock_model
+    with patch(f"{_module_name()}.genai.Client") as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client.models.generate_content.side_effect = RuntimeError("boom")
+        mock_client_cls.return_value = mock_client
 
         adapter = LLMAdapter("fake-key", "gemini-test")
         result = adapter.generate_sql("show names", "schema")
