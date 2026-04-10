@@ -75,6 +75,18 @@ class CLI:
                 new_table_name=new_table_name
             )
             
+        elif result.get("status") == "append":
+            print(f"\n{result.get('message')}")
+            print("Options: [append], [overwrite], [cancel]")
+            resolution = input("Choose a resolution: ").strip().lower()
+            
+            # Retry with user's append/overwrite/cancel choice
+            result = self.csv_ingestor.process_file(
+                file_path, 
+                table_name, 
+                conflict_resolution=resolution
+            )
+            
         if result.get("status") == "success":
             msg = result.get("message", f"Success! {result.get('rows_ingested', 0)} rows ingested.")
             print(msg)
