@@ -64,6 +64,54 @@ python main.py
 4. **Exit**: Choose Option `4` to safely close the application.
 
 ## Architecture Overview
+### Diagram
+```mermaid
+graph TD
+    User((User))
+
+    CLI[CLI Interface]
+
+    subgraph Application Flow
+        CSV[Data Loader / CSVIngestor]
+        QS[Query Service]
+    end
+
+    subgraph Core Modules
+        SM[Schema Manager]
+        LLM[LLM Adapter]
+        VAL[SQL Validator]
+    end
+
+    DB[(SQLite Database)]
+
+    %% User Interaction
+    User -->|Commands & Questions| CLI
+
+    %% CLI Routing
+    CLI -->|CSV Path & Table Name| CSV
+    CLI -->|Natural Language Query| QS
+
+    %% CSV Ingestion Flow
+    CSV -->|Check Compatibility| SM
+    CSV -->|Execute DDL & Insert| DB
+
+    %% Natural Language Query Flow
+    QS -->|1. Get Schema Context| SM
+    
+    %% Extended arrows to prevent text overlap on bidirectional links
+    QS --->|2. Prompt + Schema| LLM
+    LLM --->|3. Return Raw SQL| QS
+    
+    QS -->|4. Verify Query Safety| VAL
+    QS -->|5. Execute Valid SQL| DB
+
+    %% Schema Manager DB Access
+    SM -->|Read Table Metadata| DB
+    
+    %% Invisible links to force horizontal spacing
+    SM ~~~ LLM
+    LLM ~~~ VAL
+```
 
 The system is built on a modular architecture to enforce separation of concerns:
 
