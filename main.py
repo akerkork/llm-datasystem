@@ -33,7 +33,7 @@ def main():
     sql_validator = SQLValidator(schema_manager)
     
     # Instantiate the LLM Adapter with the secure key
-    llm_adapter = LLMAdapter(api_key=api_key, model_name="gemini-1.5-flash")
+    llm_adapter = LLMAdapter(api_key=api_key, model_name="gemini-2.5-flash")
     
     # Data and orchestration modules
     csv_ingestor = CSVIngestor(db_conn, schema_manager)
