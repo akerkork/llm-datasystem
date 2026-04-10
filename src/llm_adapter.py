@@ -59,7 +59,8 @@ class LLMAdapter:
         4. Do not generate INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, PRAGMA, ATTACH, or other non-SELECT statements.
         5. Use only tables and columns present in the schema context.
         6. If the request is ambiguous, make the most reasonable read-only interpretation using the available schema.
-        7. Do not add markdown commentary outside the required format.
+        7. Use case-insensitive matching for string comparisons (e.g., prefer LIKE over = for text).
+        8. Do not add markdown commentary outside the required format.
 
         Return your answer in exactly this format:
         SQL:
