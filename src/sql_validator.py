@@ -95,19 +95,20 @@ class SQLValidator:
                 # Take the first word to drop implicit aliases without AS
                 core_col = part.split()[0]
                 
-                # Remove table prefixes
-                col_name = core_col.split('.')[-1]
-                
                 # Extract the column name from inside basic SQL functions like SUM() or COUNT()
-                func_match = re.search(r'\((.*?)\)', col_name)
+                func_match = re.search(r'\((.*?)\)', core_col)
                 if func_match:
-                    col_name = func_match.group(1)
-                
+                    core_col = func_match.group(1)
+
+                # Remove table prefixes
+                col_name = core_col.split('.')[-1].strip('() ')
+                                
                 # Ignore asterisks, literal numbers, and empty strings
                 if col_name != '*' and not col_name.isnumeric() and col_name:
                     columns.append(col_name.lower())
                     
         return list(set(columns))
+    
     def _validate_tables_and_columns(self, tables: List[str], columns: List[str]) -> bool:
         """
         Cross-references the extracted tables and columns with the Schema Manager 
