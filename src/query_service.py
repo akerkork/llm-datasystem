@@ -62,7 +62,6 @@ class QueryService:
             generated_sql = llm_response.get("sql")
             explanation = llm_response.get("explanation", "No explanation provided.")
             
-            
             # Validate the generated SQL
             self.sql_validator.validate_query(generated_sql)
             
