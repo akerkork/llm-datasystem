@@ -62,12 +62,6 @@ class QueryService:
             generated_sql = llm_response.get("sql")
             explanation = llm_response.get("explanation", "No explanation provided.")
             
-            # FIX: Include the explanation in the error message so we can actually see the problem!
-            if not generated_sql:
-                return {
-                    "status": "error", 
-                    "message": f"The LLM failed to generate a SQL query. Details: {explanation}"
-                }
             
             # Validate the generated SQL
             self.sql_validator.validate_query(generated_sql)
