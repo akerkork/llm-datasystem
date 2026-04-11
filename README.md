@@ -3,6 +3,9 @@
 ## Overview
 The LLM Data System is a modular, CLI-based application that allows users to interact with structured data using plain English. It seamlessly ingests CSV files into a local SQLite database, dynamically infers and manages database schemas, and utilizes the Google Gemini API to translate natural language questions into safe, executable SQL queries.
 
+## Video link 
+https://youtu.be/laIHfqsoMIA
+
 ## Key Features
 * **Natural Language Querying**: Ask questions about your data in plain English and get formatted tabular results.
 * **Intelligent CSV Ingestion**: Automatically infers SQL data types from CSVs, generates `CREATE TABLE` statements, and securely loads data.
